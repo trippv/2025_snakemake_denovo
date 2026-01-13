@@ -53,18 +53,16 @@ rule trinity_stats:
         stats = "results/trinity/trinity_stats.txt"
     conda:
         "../envs/trinity.yaml"
-    log:
-        "logs/trinity_stats.log"
     shell:
         """
-        TrinityStats.pl {input.fasta} > {output.stats} 2> {log}
+        TrinityStats.pl {input.fasta} > {output.stats}
         """
 
 rule parse_trinity_stats:
     input:
         stats = "results/trinity/trinity_stats.txt"
     output:
-        tsv = "results/trinity/trinity_metrics_mqc.tsv"
+        tsv = "results/summary_qc/trinity_metrics_mqc.tsv"
     run:
         import re
 

@@ -26,7 +26,7 @@ rule multiqc:
         comment=config["multiqc_comment"]
     shell:
         """
-        multiqc results/summary_qc ./ -f \
+        multiqc results/summary_qc -f \
             --config config/multiqc_config.yaml \
             --template mi_multiqc \
             --comment "{params.comment}"

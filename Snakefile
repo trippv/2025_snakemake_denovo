@@ -46,7 +46,7 @@ rule all:
         expand("results/summary_qc/{sample}_fastp.html", sample=SAMPLES),
         expand("results/summary_qc/{sample}_fastp.json", sample=SAMPLES),
         "results/trinity/trinity_assembly.fasta",
-        "results/trinity/trinity_metrics_mqc.tsv",
+        "results/summary_qc/trinity_metrics_mqc.tsv",
         expand("results/summary_qc/{sample}_bowtie2.log", sample=SAMPLES),
         "results/busco/short_summary.specific.txt",
         "results/rnaquast/short_report.txt",
