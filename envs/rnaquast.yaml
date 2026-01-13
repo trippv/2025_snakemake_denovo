@@ -1,0 +1,9 @@
+name: rnaquast
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - rnaquast=2.2.3
+  - python>=3.6
+  - gffutils
+  - matplotlib

@@ -1,0 +1,143 @@
+# Configuración personalizada para MultiQC
+# Configurar el logotipo personalizado
+#custom_logo: "./config/logo.png"  # Ruta al archivo del logo (puede ser relativa o absoluta)
+#custom_logo_url: "https://github.com/trippv/integrity_massively"  # URL opcional a la que enlazará el logo
+
+intro_text: "REPORTE DE MUESTRA"
+
+
+
+
+# Información del encabezado del informe
+report_header_info:
+  - Nombre: "Thalassomics"
+  - Contacto: "info@thalassomics.com"
+  - Sitio Web: "https://thalassomics.com"
+  - Tipo de proyecto: "RNA-seq"
+  - Platafora: "HiSeq 2500 High Output V4"
+  - Setup: "2x125"
+
+
+
+# Opcional: Configuración adicional para personalizar el informe
+show_analysis_paths: False  # No mostrar rutas de archivos en el informe
+show_analysis_time: False   # Mostrar la fecha y hora del análisis
+disable_version_detection: false
+skip_versions_section: false
+
+
+# Se utilizan modulos personalizados para mostrar la información en español. 
+# Los modulos personalizados se encuentran en ~/mi_multiqc_pkg
+
+
+# 1. ESTO DEFINE EL ORDEN Y EVITA DUPLICADOS
+module_order:
+  - mi_fastp
+  - mi_rseqc
+  - trinity_stats: # El nombre que le dimos en el TSV (# id)
+      name: "Métricas de Ensamblaje"
+      info: "Estadísticas generadas por TrinityStats.pl sobre la continuidad y composición del transcriptoma."
+  - samtools
+  - mi_bowtie2
+  - busco:
+      name: "Análisis de Completitud (BUSCO)"
+      anchor: "busco"
+      info: "BUSCO ( Benchmarking Universal Single-Copy Orthologs ) proporciona medidas para la evaluación cuantitativa del ensamblaje del genoma, el conjunto de genes y la integridad del transcriptoma basándose en expectativas informadas evolutivamente del contenido genético de ortólogos de copia única casi universales."
+      extra: "Utiliza linajes de genes ortólogos que se encuentran en >90% de las especies de un clado taxonómico. Un alto porcentaje de genes 'Completos' indica un ensamblaje robusto, mientras que muchos genes 'Perdidos' (Missing) o 'Fragmentados' sugieren una cobertura insuficiente o errores en el ensamblaje de secuencias."
+  - mi_gffcompare
+  - mi_gffcompare
+  - kallisto:
+      name: "kallisto"
+      anchor: "kallisto"
+      info: "Herramienta para la cuantificación rápida de la abundancia de transcritos a partir de lecturas de secuenciación de ARN (RNA-Seq) mediante el uso de pseudo-alineamiento."
+      extra: "A diferencia de los alineadores convencionales, Kallisto evita el alineamiento base por base, centrándose en la compatibilidad de los k-meros de las lecturas con el índice del transcriptoma. Esto permite una velocidad extrema y una alta precisión en la estimación de niveles de expresión (TPM - Transcripts Per Million), facilitando el análisis de datos masivos y la detección de isoformas."
+  - custom_content
+  - distance
+  - mqc_pca_scatter_plot
+  - mqc_volcano_plot
+  - mqc_abundance_heatmap
+
+# 2. MANTÉN ESTO PARA QUE LOS ORIGINALES NO MOLESTEN
+exclude_modules:
+  - fastp
+  - bowtie2
+  - hisat2
+  - rseqc
+  - gffcompare
+
+  
+# --- Personalización de Columnas de la Tabla General Statistics ---
+# ---- SOlo mostrar resultados de fastp. Ocultar alineamientos ---
+table_columns_visible:
+  mi_fastp:
+    mi_fastp-after_filtering_q30_rate: True
+    mi_fastp-filtering_result_passed_filter_reads: True
+    mi_fastp-after_filtering_gc_content: True
+    mi_fastp-pct_surviving: True
+    mi_fastp-pct_adapter: True
+    mi_fastp-pct_duplication: True
+  samtools_stats-error_rate: False
+  samtools_stats-non_primary_alignments: False
+  samtools_stats-reads_mapped: False
+  samtools_stats-reads_mapped_percent: False
+  samtools_stats-reads_properly_paired_percent: False
+  samtools_stats-raw_total_sequences: False
+  bowtie_2_hisat2-overall_alignment_rate: False
+  kallisto-fragment_length: False
+  kallisto-percent_aligned: False
+  kallisto-pseudoaligned_reads: False
+
+
+# 2. Sobrescribir textos del módulo BUSCO original
+module_config:
+  busco:
+    name: "Evaluación de Completitud (BUSCO)"
+    anchor: "busco_personalizado"
+    href: "http://busco.ezlab.org/"
+    info: "Este análisis evalúa la completitud del genoma buscando ortólogos universales de copia única."
+# 3. Personalizar el gráfico de BUSCO (Traducción de etiquetas)
+custom_data:
+  busco:
+    file_format: "txt"
+    section_name: "Resultados de BUSCO"
+    description: "Proporción de genes BUSCO encontrados en el ensamblaje o anotación."
+
+# Agrega la matriz de distancia como un módulo personalizado
+custom_data:
+    distance:
+      id: 'distance'
+      section_name: 'Matriz de distancia'
+      plot_type: 'heatmap'
+      file_format: 'txt'
+      pconfig:
+        id: 'distancia_heatmap'
+      cluster_cols: true
+      sort_rows: true
+      legend: 'abundancia'
+      colorscale: 'viridis'
+
+sp:
+  distance:
+    fn: '*distance_matrix.txt'
+  mi_fastp:
+    fn: "*_fastp.json"
+
+  mi_rseqc/read_distribution:
+      fn: "*.read_distribution.txt"
+  mi_rseqc/read_duplication_pos:
+    fn: "*.pos.DupRate.xls"
+  mi_rseqc/inner_distance:
+    fn: "*.inner_distance_freq.txt"
+  mi_rseqc/gene_body_coverage:
+    fn: "*.geneBodyCoverage.txt"
+  mi_gffcompare:
+    fn: "*_gff.stats"
+  mi_busco:
+    fn: "short_summary.specific.txt"
+  mi_bowtie2:
+    contents: "overall alignment rate" # Bowtie2 se reconoce mejor por esta frase
+    # Si tus logs tienen una extensión fija, añádela para que sea más rápido:
+    # fn: "*.bowtie2.log"
+
+  trinity_stats:
+    fn: "trinity_metrics_mqc.tsv"

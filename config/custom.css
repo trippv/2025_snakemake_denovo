@@ -1,0 +1,38 @@
+/* Cambiar el fondo y borde del encabezado */
+#page_title {
+    margin: 0;
+    padding: 0;
+    border-top: 20px solid #316987;
+    border-bottom: 10px solid #316987;
+    background-color: #ffffff;
+    padding-top: 20px;
+    padding-bottom: 100px;
+    text-align: center; /* Centra el contenido dentro del encabezado */
+}
+
+/* Opcional: cambia el color del texto del título */
+#page_title h1 {
+    color: #000000;
+}
+
+/* Ocultar el logo original de MultiQC si aún está */
+.multiqc_logo {
+    display: none;
+}
+
+/* Centramos el logo personalizado */
+.custom_logo {
+    display: inline-block;
+    width: 150px;      /* Ajusta el tamaño según tu necesidad */
+    height: auto;
+    vertical-align: middle;
+    margin-bottom: 10px;
+}
+
+/* Evitamos que se flote el contenedor del logo */
+.pull-right {
+    float: none !important;
+    display: block;
+    text-align: center;
+}
+

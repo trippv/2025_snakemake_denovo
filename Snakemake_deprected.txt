@@ -1,0 +1,283 @@
+import pandas as pd
+
+# Load configuration file
+configfile: "config/config.yaml"
+
+# Read samples table
+SAMPLES_TABLE = pd.read_csv(config["samples_file"], sep="\t")
+
+# Filter included samples
+INCLUDED_SAMPLES = SAMPLES_TABLE[SAMPLES_TABLE["include"] == 1]
+
+# Dictionary with sample data
+SAMPLE_DICT = {
+    row["sample_id"]: {
+        "group": row["group"],
+        "fastq1": row["fastq1"],
+        "fastq2": row["fastq2"]
+    }
+    for _, row in INCLUDED_SAMPLES.iterrows()
+}
+
+# List of included sample IDs
+SAMPLES = list(SAMPLE_DICT.keys())
+
+# Functions to get fastq paths
+def get_fastq1(wildcards):
+    return SAMPLE_DICT[wildcards.sample]["fastq1"]
+
+def get_fastq2(wildcards):
+    return SAMPLE_DICT[wildcards.sample]["fastq2"]
+
+# Main rule to execute the entire pipeline
+rule all:
+    input:
+        # Fastp QC outputs
+        expand("results/fastp/{sample}_R1.clean.fastq.gz", sample=SAMPLES),
+        expand("results/fastp/{sample}_R2.clean.fastq.gz", sample=SAMPLES),
+        expand("results/summary_qc/{sample}_fastp.html", sample=SAMPLES),
+        expand("results/summary_qc/{sample}_fastp.json", sample=SAMPLES),
+        # Trinity assembly
+        "results/trinity/trinity_assembly.fasta",
+        # BUSCO quality assessment
+        "results/busco/short_summary.specific.txt",
+        # rnaQUAST quality assessment
+        "results/rnaquast/short_report.txt",
+        # Kallisto quantification
+        expand("results/kallisto/{sample}/abundance.h5", sample=SAMPLES),
+        # Count matrices
+        "results/quant/gene_count_matrix.csv",
+        "results/quant/transcript_count_matrix.csv",
+        # PCA plot
+        "results/summary_qc/pca_plot_mqc.html",
+        # MultiQC report
+        "results/summary_qc/multiqc_report.html"
+
+# Rule for quality control and adapter trimming with fastp
+rule fastp:
+    input:
+        r1=get_fastq1,
+        r2=get_fastq2
+    output:
+        r1_clean="results/fastp/{sample}_R1.clean.fastq.gz",
+        r2_clean="results/fastp/{sample}_R2.clean.fastq.gz",
+        json="results/summary_qc/{sample}_fastp.json",
+        html="results/summary_qc/{sample}_fastp.html"
+    conda:
+        "envs/fastp.yaml"
+    threads: config.get("fastp_threads", 2)  # Default to 2 threads, adjustable in config
+    resources:
+        mem_mb=config.get("fastp_mem_mb", 2000)  # 2GB, adjustable
+    shell:
+        """
+        fastp --in1 {input.r1} --in2 {input.r2} \
+              --out1 {output.r1_clean} --out2 {output.r2_clean} \
+              --json {output.json} --html {output.html} \
+              --thread {threads} \
+              --detect_adapter_for_pe
+        """
+
+# Rule for de novo transcriptome assembly with Trinity
+rule trinity_assembly:
+    input:
+        r1=expand("results/fastp/{sample}_R1.clean.fastq.gz", sample=SAMPLES),
+        r2=expand("results/fastp/{sample}_R2.clean.fastq.gz", sample=SAMPLES)
+    output:
+        fasta="results/trinity/trinity_assembly.fasta",
+        gene_map="results/trinity/trinity_assembly.fasta.gene_trans_map"
+    params:
+        out_prefix = "trinity"
+    conda:
+        "envs/trinity.yaml"
+    threads: config["trinity_threads"]  # Rely on config.yaml, no default
+    resources:
+        mem_mb=config["trinity_mem_mb"]  # Rely on config.yaml, no default
+    log:
+        "logs/trinity_assembly.log"
+    shell:
+        """
+        Trinity --seqType fq \
+                --left {input.r1} \
+                --right {input.r2} \
+                --CPU {threads} \
+                --max_memory {resources.mem_mb}G \
+                --full_cleanup \
+                --output trinity > {log} 2>&1
+        mkdir -p results/trinity
+        mv trinity.Trinity.fasta {output.fasta}
+        mv trinity.Trinity.fasta.gene_trans_map {output.gene_map}
+        """
+
+
+# Rule for BUSCO quality assessment
+rule busco:
+    input:
+        fasta="results/trinity/trinity_assembly.fasta"
+    output:
+        summary="results/busco/short_summary.specific.txt"
+    conda:
+        "envs/busco.yaml"
+    threads: config["busco_threads"]  # Default to 4 threads
+    resources:
+        mem_mb=config["busco_mem_mb"]  # 4GB, adjustable
+    params:
+        lineage=config["busco_lineage"],
+        out_dir="results/busco"
+    log:
+        "logs/busco/busco.log"
+    shell:
+        """
+        busco -i {input.fasta} \
+              -o busco_output \
+              -m transcriptome \
+              -l {params.lineage} \
+              -c {threads} \
+              -f \
+              --out_path {params.out_dir} > {log} 2>&1
+        mv {params.out_dir}/busco_output/short_summary*.txt {output.summary}
+        """
+
+# Rule for rnaQUAST quality assessment
+rule rnaquast:
+    input:
+        fasta="results/trinity/trinity_assembly.fasta"
+    output:
+        report="results/rnaquast/short_report.txt"
+    conda:
+        "envs/rnaquast.yaml"
+    threads: config.get("rnaquast_threads", 2)  # Default to 2 threads
+    resources:
+        mem_mb=config.get("rnaquast_mem_mb", 2000)  # 2GB, adjustable
+    params:
+        out_dir="results/rnaquast/"
+    log:
+        "logs/rnaquast/rnaquast.log"
+    shell:
+        """
+        rnaQUAST.py --transcripts {input.fasta} \
+                   --output_dir {params.out_dir} \
+                   --threads {threads} \
+                   --no_plots > {log} 2>&1
+        """
+
+# Rule for building Kallisto index
+rule kallisto_index:
+    input:
+        fasta="results/trinity/trinity_assembly.fasta"
+    output:
+        index="results/kallisto/trinity_index.idx"
+    conda:
+        "envs/kallisto.yaml"
+    resources:
+        mem_mb=config["kallisto_mem_mb"]  # 2GB, adjustable
+    shell:
+        """
+        kallisto index -i {output.index} {input.fasta}
+        """
+
+# Rule for quantification with Kallisto
+rule kallisto_quant:
+    input:
+        r1="results/fastp/{sample}_R1.clean.fastq.gz",
+        r2="results/fastp/{sample}_R2.clean.fastq.gz",
+        index="results/kallisto/trinity_index.idx"
+    output:
+        abundance="results/kallisto/{sample}/abundance.h5",
+        tsv="results/kallisto/{sample}/abundance.tsv"
+    conda:
+        "envs/kallisto.yaml"
+    threads: config["kallisto_threads"]  # Default to 2 threads
+    resources:
+        mem_mb=config["kallisto_mem_mb"]  # 2GB, adjustable
+    log:
+        "logs/kallisto_quant/{sample}.log"
+    shell:
+        """
+        kallisto quant -i {input.index} \
+                      -o results/kallisto/{wildcards.sample} \
+                      -t {threads} \
+                      {input.r1} {input.r2} > {log} 2>&1
+        """
+
+# Rule to build sample table for Kallisto quantification
+rule build_kallisto_sample_table:
+    input:
+        abundances=expand("results/kallisto/{sample}/abundance.tsv", sample=SAMPLES)
+    output:
+        table="results/quant/kallisto_samples_table.txt"
+    run:
+        with open(output.table, 'w') as f:
+            for sample in SAMPLES:
+                tsv_path = f"results/kallisto/{sample}/abundance.tsv"
+                f.write(f"{sample}\t{tsv_path}\n")
+
+
+# Rule to generate metadata for DEG
+rule generate_metadata:
+    input:
+        sample_file=config["samples_file"]
+    output:
+        metadata="data/metadata.tsv"
+    resources:
+        mem_mb=config["r_mem_mb"]  # 1GB, adjustable
+    run:
+        import pandas as pd
+        samples = pd.read_csv(input.sample_file, sep="\t")
+        samples = samples[samples["include"] == 1][["sample_id", "group"]]
+        samples.to_csv(output.metadata, sep="\t", index=False,header=["sample", "group"])
+
+# Rule to generate count matrices from Kallisto output
+rule kallisto_to_matrix:
+    input:
+        table="results/quant/kallisto_samples_table.txt",
+        gene_trans_map="results/trinity/trinity_assembly.fasta.gene_trans_map"
+    output:
+        gene_matrix="results/quant/gene_count_matrix.csv",
+        transcript_matrix="results/quant/transcript_count_matrix.csv"
+    conda:
+        "envs/r.yaml"
+    resources:
+        mem_mb=config["r_mem_mb"]  # 2GB, adjustable
+    script:
+        "scripts/kallisto_to_matrix.R"
+
+
+
+# Rule to generate PCA plot
+rule pca_html:
+    input:
+        counts="results/quant/gene_count_matrix.csv",
+        metadata="data/metadata.tsv",
+        rmd="scripts/pca_plot.Rmd"
+    output:
+        html="results/summary_qc/pca_plot_mqc.html"
+    conda:
+        "envs/r.yaml"
+    resources:
+        mem_mb=config.get("r_mem_mb", 2000)  # 2GB, adjustable
+    shell:
+        """
+        MAIN=$(pwd)
+        Rscript -e "rmarkdown::render('{input.rmd}', params = list(main='$MAIN', counts='{input.counts}', metadata='{input.metadata}'))"
+        mv scripts/pca_plot.html {output.html}
+        """
+
+# Rule for MultiQC report
+rule multiqc:
+    input:
+        fastp=expand("results/summary_qc/{sample}_fastp.json", sample=SAMPLES),
+        busco="results/busco/short_summary.specific.txt"
+    output:
+        report="results/summary_qc/multiqc_report.html"
+    conda:
+        "envs/multiqc.yaml"
+    params:
+        comment = config["multiqc_comment"]
+    resources:
+        mem_mb=config.get("multiqc_mem_mb", 1000)  # 1GB, adjustable
+    shell:
+        """
+        multiqc results/summary_qc ./ -f --config config/multiqc_config.yaml --template mi_multiqc --comment "{params.comment}"
+        mv multiqc_report.html {output.report}
+        mv multiqc_data results/summary_qc/
+        """

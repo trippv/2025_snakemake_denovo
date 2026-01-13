@@ -1,0 +1,7 @@
+sample_id	group	fastq1	fastq2	include
+batch1	batch	testdata/raw/batch1_chrI_1.fastq	testdata/raw/batch1_chrI_2.fastq	1
+batch2	batch	testdata/raw/batch2_chrI_1.fastq	testdata/raw/batch2_chrI_2.fastq	1
+batch3	batch	testdata/raw/batch3_chrI_1.fastq	testdata/raw/batch3_chrI_2.fastq	1
+chem1	chem	testdata/raw/chem1_chrI_1.fastq	testdata/raw/chem1_chrI_2.fastq	1
+chem2	chem	testdata/raw/chem2_chrI_1.fastq	testdata/raw/chem2_chrI_2.fastq	1
+chem3	chem	testdata/raw/chem3_chrI_1.fastq	testdata/raw/chem3_chrI_2.fastq	1

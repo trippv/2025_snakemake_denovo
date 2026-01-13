@@ -1,0 +1,9 @@
+name: trinity
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - trinity=2.15.1
+  - bowtie2
+  - samtools
+  - jellyfish

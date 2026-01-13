@@ -1,0 +1,19 @@
+samples_file: "config/samples.tsv"
+busco_lineage: "eukaryota_odb10"  # Adjust to your species' lineage
+
+# Reporte global 
+multiqc_comment: "Los datos para este muestra provienen del artículo A comprehensive comparison of RNA-Seq-based transcriptome analysis from reads to differential gene expression and cross-comparison with microarrays: a case study in Saccharomyces cerevisiae de Nookaew et al., en el cual se estudia la cepa de S. cerevisiae CEN.PK 113-7D (levadura) bajo dos condiciones metabólicas distintas: exceso de glucosa (batch) y limitación de glucosa (chemostat)."
+
+
+fastp_threads: 2
+fastp_mem_mb: 2000
+trinity_threads: 4
+trinity_mem_mb: 10  # 10GB (in gigabytes for trinity resources)
+busco_threads: 4
+busco_mem_mb: 4000
+rnaquast_threads: 2
+rnaquast_mem_mb: 2000
+kallisto_threads: 2
+kallisto_mem_mb: 2000
+r_mem_mb: 2000
+multiqc_mem_mb: 1000
