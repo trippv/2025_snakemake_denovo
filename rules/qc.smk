@@ -51,6 +51,8 @@ rule trinity_stats:
         fasta = "results/trinity/trinity_assembly.fasta"
     output:
         stats = "results/trinity/trinity_stats.txt"
+    conda:
+        "../envs/trinity.yaml"
     log:
         "logs/trinity_stats.log"
     shell:
