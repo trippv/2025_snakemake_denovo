@@ -17,7 +17,7 @@ rule pca_html:
 rule multiqc:
     input:
         fastp=expand("results/summary_qc/{sample}_fastp.json", sample=SAMPLES),
-        busco="results/busco/short_summary.specific.txt"
+        busco="results/summary_qc/short_summary.specific.txt"
     output:
         report="results/summary_qc/multiqc_report.html"
     conda:
