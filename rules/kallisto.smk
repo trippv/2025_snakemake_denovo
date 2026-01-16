@@ -24,7 +24,7 @@ rule kallisto_quant:
     resources:
         mem_mb=config["kallisto_mem_mb"]
     log:
-        "logs/kallisto_quant/{sample}.log"
+        "results/summary_qc/{sample}.log"
     shell:
         """
         kallisto quant -i {input.index} \

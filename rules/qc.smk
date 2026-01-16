@@ -2,7 +2,7 @@ rule busco:
     input:
         fasta="results/trinity/trinity_assembly.fasta"
     output:
-        summary="results/busco/short_summary.specific.txt"
+        summary="results/summary_qc/short_summary.specific.txt"
     conda:
         "../envs/busco.yaml"
     threads: config["busco_threads"]

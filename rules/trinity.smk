@@ -20,7 +20,7 @@ rule trinity_assembly:
                 --CPU {threads} \
                 --max_memory {resources.mem_mb}G \
                 --bflyCPU 2 \ #para evitar conflictos de paralelismo
-                #--full_cleanup \
+                --full_cleanup \
                 --output trinity > {log} 2>&1
         mkdir -p results/trinity
         mv trinity.Trinity.fasta {output.fasta}
