@@ -20,8 +20,8 @@ rule multiqc:
         busco="results/summary_qc/short_summary.specific.txt"
     output:
         report="results/summary_qc/multiqc_report.html"
-    conda:
-        "../envs/multiqc.yaml"
+#    conda:
+#        "../envs/multiqc.yaml" # correr con ambiente local por problemas con multiqc y conda
     params:
         comment=config["multiqc_comment"]
     shell:
