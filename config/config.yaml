@@ -17,3 +17,10 @@ kallisto_threads: 2
 kallisto_mem_mb: 2000
 r_mem_mb: 2000
 multiqc_mem_mb: 1000
+
+
+#### Expresion diferencial
+# parametros para DESeq2
+diff_exp:
+  fdr_threshold: 0.1
+  lfc_threshold: 1

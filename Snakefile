@@ -34,9 +34,12 @@ def get_fastq2(wildcards):
 
 include: "rules/fastp.smk"
 include: "rules/trinity.smk"
+include: "rules/transdecoder.smk"
 include: "rules/qc.smk"
 include: "rules/kallisto.smk"
 include: "rules/quantification.smk"
+include: "rules/expr_diff.smk"
+include: "rules/mqc_reformat.smk"
 include: "rules/reports.smk"
 
 rule all:
@@ -46,6 +49,8 @@ rule all:
         expand("results/summary_qc/{sample}_fastp.html", sample=SAMPLES),
         expand("results/summary_qc/{sample}_fastp.json", sample=SAMPLES),
         "results/trinity/trinity_assembly.fasta",
+# --- NUEVOS INPUTS DE TRANSDECODER ---
+        "results/transdecoder/trinity_assembly.fasta.transdecoder.pep",
         "results/summary_qc/trinity_metrics_mqc.tsv",
         expand("results/summary_qc/{sample}_bowtie2.log", sample=SAMPLES),
         "results/summary_qc/short_summary.specific.txt",
@@ -53,5 +58,10 @@ rule all:
         expand("results/kallisto/{sample}/abundance.h5", sample=SAMPLES),
         "results/quant/gene_count_matrix.csv",
         "results/quant/transcript_count_matrix.csv",
+        "results/summary_qc/distance_matrix.txt",
+        "results/summary_qc/pca.txt",
+        "results/summary_qc/abundance.txt",
+        "results/summary_qc/volcano.txt",
+        ##########################################
         "results/summary_qc/pca_plot_mqc.html",
         "results/summary_qc/multiqc_report.html"

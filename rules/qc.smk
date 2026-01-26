@@ -58,51 +58,51 @@ rule trinity_stats:
         TrinityStats.pl {input.fasta} > {output.stats}
         """
 
-rule parse_trinity_stats:
-    input:
-        stats = "results/trinity/trinity_stats.txt"
-    output:
-        tsv = "results/summary_qc/trinity_metrics_mqc.tsv"
-    run:
-        import re
-
-        with open(input.stats, 'r') as f:
-            content = f.read()
-
-        def quick_find(pattern, text):
-            match = re.search(pattern, text)
-            return match.group(1).strip() if match else "0"
-
-        # 1. Extraer datos generales (Sección superior)
-        total_genes = quick_find(r"Total trinity 'genes':\s+(\d+)", content)
-        total_trans = quick_find(r"Total trinity transcripts:\s+(\d+)", content)
-        gc_content  = quick_find(r"Percent GC:\s+([\d\.]+)", content)
-
-        # 2. Extraer métricas de ALL transcript contigs (Primera sección de stats)
-        # Usamos un re.search limitado a la primera parte del archivo para evitar confundir con 'Longest Isoform'
-        all_stats_part = content.split("Stats based on ONLY LONGEST ISOFORM")[0]
-        
-        n10         = quick_find(r"Contig N10:\s+(\d+)", all_stats_part)
-        n50         = quick_find(r"Contig N50:\s+(\d+)", all_stats_part)
-        median_len  = quick_find(r"Median contig length:\s+(\d+)", all_stats_part)
-        avg_len     = quick_find(r"Average contig:\s+([\d\.]+)", all_stats_part)
-        total_bases = quick_find(r"Total assembled bases:\s+(\d+)", all_stats_part)
-
-        # 3. Crear el archivo TSV para MultiQC
-        with open(output.tsv, 'w') as out:
-            out.write("# id: 'trinity_stats'\n")
-            out.write("# section_name: 'Estadísticas del Ensamblaje (Trinity)'\n")
-            out.write("# plot_type: 'table'\n")
-            out.write("# pconfig:\n")
-            out.write("#    namespace: 'Trinity Metrics'\n")
-            
-            # Cabecera con más detalles
-            header = ["Sample", "Genes", "Transcripts", "N10", "N50", "Median_Len", "Avg_Len", "Total_Bases", "%GC"]
-            out.write("\t".join(header) + "\n")
-            
-            # Valores
-            values = ["Trinity_Assembly", total_genes, total_trans, n10, n50, median_len, avg_len, total_bases, gc_content]
-            out.write("\t".join(values) + "\n")
+#rule parse_trinity_stats:
+#    input:
+#        stats = "results/trinity/trinity_stats.txt"
+#    output:
+#        tsv = "results/summary_qc/trinity_metrics_mqc.tsv"
+#    run:
+#        import re
+#
+#        with open(input.stats, 'r') as f:
+#            content = f.read()
+#
+#        def quick_find(pattern, text):
+#            match = re.search(pattern, text)
+#            return match.group(1).strip() if match else "0"
+#
+#        # 1. Extraer datos generales (Sección superior)
+#        total_genes = quick_find(r"Total trinity 'genes':\s+(\d+)", content)
+#        total_trans = quick_find(r"Total trinity transcripts:\s+(\d+)", content)
+#        gc_content  = quick_find(r"Percent GC:\s+([\d\.]+)", content)
+#
+#        # 2. Extraer métricas de ALL transcript contigs (Primera sección de stats)
+#        # Usamos un re.search limitado a la primera parte del archivo para evitar confundir con 'Longest Isoform'
+#        all_stats_part = content.split("Stats based on ONLY LONGEST ISOFORM")[0]
+#        
+#        n10         = quick_find(r"Contig N10:\s+(\d+)", all_stats_part)
+#        n50         = quick_find(r"Contig N50:\s+(\d+)", all_stats_part)
+#        median_len  = quick_find(r"Median contig length:\s+(\d+)", all_stats_part)
+#        avg_len     = quick_find(r"Average contig:\s+([\d\.]+)", all_stats_part)
+#        total_bases = quick_find(r"Total assembled bases:\s+(\d+)", all_stats_part)
+#
+#        # 3. Crear el archivo TSV para MultiQC
+#        with open(output.tsv, 'w') as out:
+#            out.write("# id: 'trinity_stats'\n")
+#            out.write("# section_name: 'Estadísticas del Ensamblaje (Trinity)'\n")
+#            out.write("# plot_type: 'table'\n")
+#            out.write("# pconfig:\n")
+#            out.write("#    namespace: 'Trinity Metrics'\n")
+#            
+#            # Cabecera con más detalles
+#            header = ["Sample", "Genes", "Transcripts", "N10", "N50", "Median_Len", "Avg_Len", "Total_Bases", "%GC"]
+#            out.write("\t".join(header) + "\n")
+#            
+#            # Valores
+#            values = ["Trinity_Assembly", total_genes, total_trans, n10, n50, median_len, avg_len, total_bases, gc_content]
+#            out.write("\t".join(values) + "\n")
 
 
 # Bowtie para mapear las lacturas al ensamblaje de Trinity
@@ -147,3 +147,71 @@ rule bowtie2_align_to_assembly:
             --no-unal --sensitive --no-mixed --no-discordant \
             2> {output.log} | samtools view -bS - > {output.bam}
         """
+
+rule parse_assembly_quality:
+    input:
+        stats = "results/trinity/trinity_stats.txt",
+        fasta = "results/trinity/trinity_assembly.fasta",
+        gff3  = "results/transdecoder/trinity_assembly.fasta.transdecoder.gff3"
+    output:
+        tsv = "results/summary_qc/trinity_metrics_mqc.tsv"
+    run:
+        import re
+
+        # --- 1. PROCESAR TRINITY STATS ---
+        with open(input.stats, 'r') as f:
+            content = f.read()
+
+        def quick_find(pattern, text):
+            match = re.search(pattern, text)
+            return match.group(1).strip() if match else "0"
+
+        total_genes = quick_find(r"Total trinity 'genes':\s+(\d+)", content)
+        total_trans = quick_find(r"Total trinity transcripts:\s+(\d+)", content)
+        gc_content  = quick_find(r"Percent GC:\s+([\d\.]+)", content)
+
+        all_stats_part = content.split("Stats based on ONLY LONGEST ISOFORM")[0]
+        n50         = quick_find(r"Contig N50:\s+(\d+)", all_stats_part)
+        avg_len     = quick_find(r"Average contig:\s+([\d\.]+)", all_stats_part)
+        total_bases = quick_find(r"Total assembled bases:\s+(\d+)", all_stats_part)
+
+        # --- 2. CALCULAR POTENCIAL CODIFICANTE (TRANSDECODER) ---
+        ids_con_orf = set()
+        with open(input.gff3, 'r') as f:
+            for line in f:
+                if not line.startswith("#") and "\tmRNA\t" in line:
+                    # El ID del transcripto original en TransDecoder está en la columna 1
+                    ids_con_orf.add(line.split("\t")[0])
+        
+        n_orfs = len(ids_con_orf)
+        # Usamos total_trans convertido a float para el cálculo
+        percent_orf = (n_orfs / float(total_trans) * 100) if float(total_trans) > 0 else 0
+
+        # --- 3. ESCRIBIR TSV UNIFICADO ---
+        with open(output.tsv, 'w') as out:
+            out.write("# id: 'assembly_qc_stats'\n")
+            out.write("# section_name: 'Calidad Integral del Ensamblaje'\n")
+            out.write("# plot_type: 'table'\n")
+            out.write("# pconfig:\n")
+            out.write("#     namespace: 'Assembly Metrics'\n")
+            
+            # Cabecera expandida con métricas de TransDecoder
+            header = ["Sample", "Genes", "Transcripts", "N50", "Avg_Len", "Total_MB", "%GC", "Trans_with_ORF", "%_with_ORF"]
+            out.write("\t".join(header) + "\n")
+            
+            # Convertir bases a Megabases para que sea más legible (opcional)
+            mb_assembled = f"{int(total_bases)/1e6:.2f}"
+            
+            # Valores combinados
+            values = [
+                "Trinity_Assembly", 
+                total_genes, 
+                total_trans, 
+                n50, 
+                avg_len, 
+                mb_assembled, 
+                gc_content, 
+                str(n_orfs), 
+                f"{percent_orf:.2f}"
+            ]
+            out.write("\t".join(values) + "\n")

@@ -1,0 +1,8 @@
+# Snakemake
+.snakemake/
+*.log
+
+
+# Datos y resultados
+results/
+busco_downloads/
