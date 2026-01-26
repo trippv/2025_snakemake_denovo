@@ -24,3 +24,8 @@ multiqc_mem_mb: 1000
 diff_exp:
   fdr_threshold: 0.1
   lfc_threshold: 1
+
+
+# Reporte global 
+multiqc_comment: "Los datos para este muestra provienen del artículo A comprehensive comparison of RNA-Seq-based transcriptome analysis from reads to differential gene expression and cross-comparison with microarrays: a case study in Saccharomyces cerevisiae de Nookaew et al., en el cual se estudia la cepa de S. cerevisiae CEN.PK 113-7D (levadura) bajo dos condiciones metabólicas distintas: exceso de glucosa (batch) y limitación de glucosa (chemostat)."
+Thalassomics: true # Controla el formato del reporte MultiQC.

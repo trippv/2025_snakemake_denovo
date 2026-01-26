@@ -20,16 +20,22 @@ rule multiqc:
         busco="results/summary_qc/short_summary.specific.txt"
     output:
         report="results/summary_qc/multiqc_report.html"
-#    conda:
-#        "../envs/multiqc.yaml" # correr con ambiente local por problemas con multiqc y conda
+output:
+        report = "results/summary_qc/multiqc_report.html"
     params:
-        comment=config["multiqc_comment"]
+        comment = config["multiqc_comment"],
+        # Lógica compacta para el template
+        extra = "--template mi_multiqc" if config.get("Thalassomics") else ""
+    # Snakemake permite evaluar el config aquí mismo
+    conda:
+        None if config.get("Thalassomics") else "../envs/multiqc.yaml"
+    threads: 4
     shell:
         """
-        multiqc results/summary_qc -f \
+        multiqc results/summary_qc \
+            -o results/summary_qc \
+            -f \
             --config config/multiqc_config.yaml \
-            --template mi_multiqc \
-            --comment "{params.comment}"
-        mv multiqc_report.html {output.report}
-        mv multiqc_data results/summary_qc/
+            {params.extra} \
+            --comment "{params.comment}" --verbose
         """
