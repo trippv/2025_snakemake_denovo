@@ -8,8 +8,8 @@ rule transdecoder_longorfs:
         pep_long = "results/transdecoder/trinity_assembly.fasta.transdecoder_dir/longest_orfs.pep"
     log:
         "logs/transdecoder/longorfs.log"
-#    conda:
-#        "../envs/transdecoder.yaml"
+    conda:
+        "../envs/transdecoder.yaml"
     shell:
         """
         TransDecoder.LongOrfs -t {input.fasta} --output_dir results/transdecoder > {log} 2>&1
@@ -25,8 +25,8 @@ rule transdecoder_predict:
         gff3 = "results/transdecoder/trinity_assembly.fasta.transdecoder.gff3"
     log:
         "logs/transdecoder/predict.log"
-#    conda:
-#        "../envs/transdecoder.yaml"
+    conda:
+        "../envs/transdecoder.yaml"
     shell:
         """
         TransDecoder.Predict -t {input.fasta} --output_dir results/transdecoder > {log} 2>&1

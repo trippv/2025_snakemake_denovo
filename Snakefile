@@ -63,5 +63,8 @@ rule all:
         "results/summary_qc/abundance.txt",
         "results/summary_qc/volcano.txt",
         ##########################################
-        "results/summary_qc/pca_plot_mqc.html",
+       # "results/summary_qc/pca_plot_mqc.html",
+        "results/summary_qc/abundance_heatmap_mqc.yaml",
+        "results/summary_qc/pca_mqc.yaml",
+        "results/summary_qc/volcano_mqc.yaml",
         "results/summary_qc/multiqc_report.html"

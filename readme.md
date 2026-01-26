@@ -62,10 +62,20 @@ project/
 │   └── samples.tsv        # Información de muestras
 ├── data/                  # Carpeta de trabajo
 ├── testdata/              # (Ejemplo) Datos de prueba
-├── results/               # Salida del análisis
+├── results                # Salida del análisis
+│   ├── busco
+│   ├── Exp_Diff
+│   ├── fastp
+│   ├── kallisto
+│   ├── mapping
+│   ├── quant
+│   ├── rnaquast
+│   ├── summary_qc
+│   ├── transdecoder
+│   └── trinity               
 ├── rules/                 # Reglas individuales de Snakemake
 ├── envs/                  # Entornos conda por herramienta
-├── scripts/               # Scripts auxiliares (e.g., PCA)
+├── scripts/               # Scripts auxiliares (e.g., Deseq2)
 ├── logs                   # Registro de sterr
 └── Snakefile              # Punto de entrada del workflow
 ```

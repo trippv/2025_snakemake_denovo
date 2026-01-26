@@ -1,0 +1,8 @@
+name: transdecoder
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - transdecoder =5.7.0  # O la versión más reciente disponible
+  - perl                 # TransDecoder es una suite de scripts en Perl
