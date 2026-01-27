@@ -17,7 +17,9 @@
 rule multiqc:
     input:
         fastp=expand("results/summary_qc/{sample}_fastp.json", sample=SAMPLES),
-        busco="results/summary_qc/short_summary.specific.txt"
+        busco="results/summary_qc/short_summary.specific.txt",
+        assembly_stats="results/trinity/trinity_stats.txt",
+        rnaquast="results/rnaquast/short_report.txt"
     output:
         report="results/summary_qc/multiqc_report.html"
     params:
